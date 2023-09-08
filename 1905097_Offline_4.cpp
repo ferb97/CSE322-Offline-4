@@ -2,6 +2,7 @@
 #include<windows.h>
 using namespace std;
 
+// function to flip a bit
 char flipBit(char ch)
 {
     if(ch == '1'){
@@ -12,8 +13,10 @@ char flipBit(char ch)
     }
 }
 
+// function to add hamming bits to a data string
 string addHammingCheckBits(string data, int r)
 {
+    // add the given string
     string new_data = "";
     int cur = 0, tmp = 1;
     for(int i = 0; i < data.size() + r; i++){
@@ -27,6 +30,7 @@ string addHammingCheckBits(string data, int r)
         }
     }
 
+    // calculate hamming bits and add
     for(int i = 1; i <= data.size() + r; i *= 2){
         int hamming_bit = 0;
 
@@ -49,10 +53,10 @@ string addHammingCheckBits(string data, int r)
     return new_data;
 }
 
+// xor subtraction between dividend and divisor
 string xorSubtraction(string dividend, string divisor)
 {
     string ans = "";
-//    cout << "Dividend: " << dividend << " Divisor: " << divisor << endl;
 
     for(int i = 0; i < divisor.size(); i++){
         if(dividend[i] == divisor[i]){
@@ -62,11 +66,11 @@ string xorSubtraction(string dividend, string divisor)
            ans += "1";
         }
     }
-//    cout << "Ans: " << ans << endl;
 
     return ans;
 }
 
+// get remainder or CRC check bits
 string getCRCCheckBits(string dividend, string divisor)
 {
     int len = divisor.size();
@@ -75,13 +79,13 @@ string getCRCCheckBits(string dividend, string divisor)
 
     while(cur_pos < dividend.size()){
         if(tmp_string[0] == '1'){
-//           cout << "In 1: " << tmp_string << endl;
+           // xor subtraction possible
            tmp_string = xorSubtraction(tmp_string, divisor);
            tmp_string = tmp_string.substr(1) + dividend[cur_pos];
         }
 
         else{
-//           cout << "In 0: " << tmp_string << endl;
+           // adding another bit from dividend
            tmp_string = tmp_string.substr(1) + dividend[cur_pos];
         }
 
@@ -96,11 +100,24 @@ string getCRCCheckBits(string dividend, string divisor)
     return tmp_string;
 }
 
+// generate error bits
 string getErrorsInDataBits(string data_bits, double p)
 {
+    // error generator
+    mt19937 generator(static_cast<unsigned int>(time(nullptr)));
+    uniform_real_distribution<double> distribution(0.0, 1.0);
+
+    for(int i = 0; i < data_bits.size(); i++){
+        double randomValue = distribution(generator);
+        // if randomValue < p, flip the bit
+        if(randomValue < p){
+           data_bits[i] = flipBit(data_bits[i]);
+        }
+    }
     return data_bits;
 }
 
+// Error detection using CRC
 bool detectErrorUsingCRC(string dividend, string divisor)
 {
     int len = divisor.size();
@@ -109,13 +126,11 @@ bool detectErrorUsingCRC(string dividend, string divisor)
 
     while(cur_pos < dividend.size()){
         if(tmp_string[0] == '1'){
-//           cout << "In 1: " << tmp_string << endl;
            tmp_string = xorSubtraction(tmp_string, divisor);
            tmp_string = tmp_string.substr(1) + dividend[cur_pos];
         }
 
         else{
-//           cout << "In 0: " << tmp_string << endl;
            tmp_string = tmp_string.substr(1) + dividend[cur_pos];
         }
 
@@ -126,6 +141,7 @@ bool detectErrorUsingCRC(string dividend, string divisor)
        tmp_string = xorSubtraction(tmp_string, divisor);
     }
 
+    // if remainder is not 0, return true
     for(int i = 0; i < tmp_string.size(); i++){
         if(tmp_string[i] != '0'){
            return true;
@@ -135,6 +151,7 @@ bool detectErrorUsingCRC(string dividend, string divisor)
     return false;
 }
 
+// correct the error using hamming bits and get the original data string
 string getDataBitsWithoutHammingBits(string data_hamming)
 {
     string incorrectBits = "";
@@ -150,13 +167,16 @@ string getDataBitsWithoutHammingBits(string data_hamming)
         }
 
         if((hamming_bit == 1 && data_hamming[i - 1] == '1') || (hamming_bit == 0 && data_hamming[i - 1] == '0')){
+           // data is correct
            incorrectBits += "0";
         }
         else{
+           // data is not correct
            incorrectBits += "1";
         }
     }
 
+    // calculate the position of the wrong bit
     int pos = 1, wrong_bit_pos = 0;
     for(int i = 0; i < incorrectBits.size(); i++){
         if(incorrectBits[i] == '1'){
@@ -165,11 +185,12 @@ string getDataBitsWithoutHammingBits(string data_hamming)
         pos *= 2;
     }
 
-//    cout << "Wrong bit: " << wrong_bit_pos << endl;
+    // if wrong bit position in range, correct it
     if(wrong_bit_pos > 0 && wrong_bit_pos <= data_hamming.size()){
        data_hamming[wrong_bit_pos - 1] = flipBit(data_hamming[wrong_bit_pos - 1]);
     }
 
+    // copying the new string removing the hamming bits
     string new_data = "";
     pos = 1;
     for(int i = 0; i < data_hamming.size(); i++){
@@ -185,36 +206,34 @@ string getDataBitsWithoutHammingBits(string data_hamming)
 
 int main()
 {
+    // take input
     string data_string;
     cout << "enter data string: ";
     getline(cin, data_string);
-//    cout << data_string << endl;
 
     int m;
     cout << "enter number of data bytes in a row (m): ";
     cin >> m;
-//    cout << m << endl;
 
     double p;
     cout << "enter probability (p): ";
     cin >> p;
-//    cout << p << endl;
 
     string generator_polynomial;
     cout << "enter generator polynomial: ";
     cin >> generator_polynomial;
-//    cout << generator_polynomial << endl;
 
     cout << endl << endl;
+
     // data padding
     int rem = data_string.size() % m;
 
     for(int i = 0; i < ((m - rem) % m); i++){
         data_string += "~";
     }
-//    cout << data_string.size() <<endl;
     cout << "data string after padding: " << data_string << endl << endl;
 
+    // creating data blocks
     int total_rows = data_string.size() / m;
     string data_rows[total_rows];
 
@@ -226,11 +245,11 @@ int main()
 
     for(int i = 0; i < data_string.size(); i++){
         entry_number++;
+
         int ascii_value = (int)data_string[i];
-//        cout << ascii_value << endl;
         bitset<8> binaryRepresentation(ascii_value);
         string binary_string = binaryRepresentation.to_string();
-//        cout << binary_string << endl;
+
         data_rows[row_number] += binary_string;
         if(entry_number == m){
            row_number++;
@@ -238,21 +257,22 @@ int main()
         }
     }
 
+    // printing data blocks
     cout << "data block (ascii code of m characters per row):" << endl;
-//    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
     for(int i = 0; i < total_rows; i++){
         cout << data_rows[i] << endl;
     }
     cout << endl;
 
+    // calculating hamming bits
     int hamming_r_bits = 0, tmp = 1, data_row_size = m * 8;
 
     while(tmp < (data_row_size + hamming_r_bits + 1)){
         hamming_r_bits++;
         tmp *= 2;
     }
-//    cout << hamming_r_bits << endl;
 
+    // adding hamming bits
     string data_row_with_hamming_bits[total_rows];
 
     cout << "data block after adding check bits:" << endl;
@@ -275,6 +295,7 @@ int main()
     }
     cout << endl;
 
+    // serializing data column wise
     string column_wise_serialized_data = "";
     for(int j = 0; j < data_row_size + hamming_r_bits; j++){
         for(int i = 0; i < total_rows; i++){
@@ -285,6 +306,7 @@ int main()
     cout << "data bits after column-wise serialization:" << endl;
     cout << column_wise_serialized_data << endl << endl;
 
+    // adding CRC checksums
     int data_bits_without_CRC_length = (data_row_size + hamming_r_bits) * total_rows;
     int data_bits_with_CRC_length = data_bits_without_CRC_length + generator_polynomial.size() - 1;
     string data_bits_with_CRC_bits = column_wise_serialized_data.substr(0);
@@ -294,11 +316,11 @@ int main()
     }
 
     string CRC_r_bits = getCRCCheckBits(data_bits_with_CRC_bits, generator_polynomial);
-//    cout << CRC_r_bits << endl;
     for(int i = data_bits_without_CRC_length; i < data_bits_with_CRC_length; i++){
         data_bits_with_CRC_bits[i] = CRC_r_bits[i - data_bits_without_CRC_length];
     }
 
+    // printing data with CRC checksums
     cout << "data bits after appending CRC checksum (sent frame):" << endl;
     for(int i = 0; i < data_bits_with_CRC_length; i++){
         if(i < data_bits_without_CRC_length){
@@ -312,60 +334,10 @@ int main()
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
     cout << endl << endl;
 
+    // adding errors
     string data_bits_with_error = getErrorsInDataBits(data_bits_with_CRC_bits, p);
-    // Computer Networks
-//    data_bits_with_error[18] = '0';
-//    data_bits_with_error[27] = '0';
-//    data_bits_with_error[40] = '1';
-//    data_bits_with_error[52] = '1';
-//    data_bits_with_error[69] = '0';
-//    data_bits_with_error[109] = '1';
-//    data_bits_with_error[139] = '0';
-//    data_bits_with_error[155] = '1';
-//    data_bits_with_error[159] = '0';
-    // a
-    // Hamming Code
-//    data_bits_with_error[0] = '1';
-//    data_bits_with_error[5] = '1';
-//    data_bits_with_error[16] = '1';
-//    data_bits_with_error[22] = '1';
-//    data_bits_with_error[26] = '0';
-//    data_bits_with_error[28] = '0';
-//    data_bits_with_error[53] = '1';
-//    data_bits_with_error[57] = '0';
-//    data_bits_with_error[58] = '1';
-//    data_bits_with_error[71] = '1';
-//    data_bits_with_error[81] = '1';
-//    data_bits_with_error[106] = '0';
-//    data_bits_with_error[123] = '1';
-    // Error Detection
-//    data_bits_with_error[61] = '1';
-//    data_bits_with_error[89] = '0';
-//    data_bits_with_error[123] = '0';
-    // physical layer
-//    data_bits_with_error[1] = '0';
-//    data_bits_with_error[37] = '1';
-//    data_bits_with_error[50] = '1';
-//    data_bits_with_error[67] = '0';
-//    data_bits_with_error[97] = '1';
-//    data_bits_with_error[125] = '0';
-    // Error Correction
-//    data_bits_with_error[11] = '1';
-//    data_bits_with_error[101] = '1';
-    // no error
-    // many errors
-//    data_bits_with_error[5] = '0';
-//    data_bits_with_error[18] = '1';
-//    data_bits_with_error[21] = '1';
-//    data_bits_with_error[25] = '1';
-//    data_bits_with_error[47] = '1';
-//    data_bits_with_error[73] = '0';
-//    data_bits_with_error[80] = '1';
-//    data_bits_with_error[83] = '0';
-//    data_bits_with_error[90] = '0';
-//    data_bits_with_error[97] = '0';
-//    data_bits_with_error[108] = '1';
 
+    // printing received data frames
     cout << "received frame:" << endl;
     for(int i = 0; i < data_bits_with_error.size(); i++){
         if(data_bits_with_error[i] == data_bits_with_CRC_bits[i]){
@@ -379,6 +351,7 @@ int main()
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
     cout << endl << endl;
 
+    // detect error using CRC checksums
     bool isError = detectErrorUsingCRC(data_bits_with_error, generator_polynomial);
 
     cout << "result of CRC checksum matching: ";
@@ -389,6 +362,7 @@ int main()
        cout << "no error detected" << endl << endl;
     }
 
+    // removing CRC bits
     string data_bits_received_without_CRC = data_bits_with_error.substr(0, data_bits_without_CRC_length);
     string data_rows_received[total_rows];
 
@@ -396,6 +370,7 @@ int main()
         data_rows_received[i] = "";
     }
 
+    // getting error positions
     set<int> error_bits_position;
     int cur_pos = 0;
 
@@ -409,6 +384,7 @@ int main()
         }
     }
 
+    // printing received data bits without CRC bits
     cout << "data block after removing CRC checksum bits:" << endl;
     for(int i = 0; i < total_rows; i++){
         for(int j = 0; j < data_row_size + hamming_r_bits; j++){
@@ -425,17 +401,20 @@ int main()
     }
     cout << endl;
 
+    // removing hamming bits and correcting data bits if possible
     string data_rows_received_without_hamming_bits[total_rows];
     for(int i = 0; i < total_rows; i++){
         data_rows_received_without_hamming_bits[i] = getDataBitsWithoutHammingBits(data_rows_received[i]);
     }
 
+    // printing data bits without hamming bits
     cout << "data block after removing check bits:" << endl;
     for(int i = 0; i < total_rows; i++){
         cout << data_rows_received_without_hamming_bits[i] << endl;
     }
     cout << endl;
 
+    // generate output frame
     string output_frame = "";
     for(int i = 0; i < total_rows; i++){
         for(int j = 0; j < m; j++){
@@ -447,6 +426,7 @@ int main()
         }
     }
 
+    // print output frame
     cout << "output frame: " << output_frame << endl;
 
     return 0;
