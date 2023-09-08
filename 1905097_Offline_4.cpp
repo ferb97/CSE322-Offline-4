@@ -2,6 +2,16 @@
 #include<windows.h>
 using namespace std;
 
+char flipBit(char ch)
+{
+    if(ch == '1'){
+       return '0';
+    }
+    else{
+       return '1';
+    }
+}
+
 string addHammingCheckBits(string data, int r)
 {
     string new_data = "";
@@ -125,6 +135,54 @@ bool detectErrorUsingCRC(string dividend, string divisor)
     return false;
 }
 
+string getDataBitsWithoutHammingBits(string data_hamming)
+{
+    string incorrectBits = "";
+    for(int i = 1; i <= data_hamming.size(); i *= 2){
+        int hamming_bit = 0;
+
+        for(int j = i + 1; j <= data_hamming.size(); j++){
+            if(j & i){
+               if(data_hamming[j - 1] == '1'){
+                 hamming_bit ^= 1;
+               }
+            }
+        }
+
+        if((hamming_bit == 1 && data_hamming[i - 1] == '1') || (hamming_bit == 0 && data_hamming[i - 1] == '0')){
+           incorrectBits += "0";
+        }
+        else{
+           incorrectBits += "1";
+        }
+    }
+
+    int pos = 1, wrong_bit_pos = 0;
+    for(int i = 0; i < incorrectBits.size(); i++){
+        if(incorrectBits[i] == '1'){
+           wrong_bit_pos += pos;
+        }
+        pos *= 2;
+    }
+
+//    cout << "Wrong bit: " << wrong_bit_pos << endl;
+    if(wrong_bit_pos > 0 && wrong_bit_pos <= data_hamming.size()){
+       data_hamming[wrong_bit_pos - 1] = flipBit(data_hamming[wrong_bit_pos - 1]);
+    }
+
+    string new_data = "";
+    pos = 1;
+    for(int i = 0; i < data_hamming.size(); i++){
+        if(i == pos - 1){
+           pos *= 2;
+           continue;
+        }
+        new_data += data_hamming[i];
+    }
+
+    return new_data;
+}
+
 int main()
 {
     string data_string;
@@ -133,12 +191,12 @@ int main()
 //    cout << data_string << endl;
 
     int m;
-    cout << "enter number of data bytes in a row <m>: ";
+    cout << "enter number of data bytes in a row (m): ";
     cin >> m;
 //    cout << m << endl;
 
     double p;
-    cout << "enter probability <p>: ";
+    cout << "enter probability (p): ";
     cin >> p;
 //    cout << p << endl;
 
@@ -180,7 +238,7 @@ int main()
         }
     }
 
-    cout << "data block <ascii code of m characters per row>:" << endl;
+    cout << "data block (ascii code of m characters per row):" << endl;
 //    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
     for(int i = 0; i < total_rows; i++){
         cout << data_rows[i] << endl;
@@ -241,7 +299,7 @@ int main()
         data_bits_with_CRC_bits[i] = CRC_r_bits[i - data_bits_without_CRC_length];
     }
 
-    cout << "data bits after appending CRC checksum <sent frame>:" << endl;
+    cout << "data bits after appending CRC checksum (sent frame):" << endl;
     for(int i = 0; i < data_bits_with_CRC_length; i++){
         if(i < data_bits_without_CRC_length){
            SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
@@ -255,15 +313,58 @@ int main()
     cout << endl << endl;
 
     string data_bits_with_error = getErrorsInDataBits(data_bits_with_CRC_bits, p);
-    data_bits_with_error[18] = '0';
-    data_bits_with_error[27] = '0';
-    data_bits_with_error[40] = '1';
-    data_bits_with_error[52] = '1';
-    data_bits_with_error[69] = '0';
-    data_bits_with_error[109] = '1';
-    data_bits_with_error[139] = '0';
-    data_bits_with_error[155] = '1';
-    data_bits_with_error[159] = '0';
+    // Computer Networks
+//    data_bits_with_error[18] = '0';
+//    data_bits_with_error[27] = '0';
+//    data_bits_with_error[40] = '1';
+//    data_bits_with_error[52] = '1';
+//    data_bits_with_error[69] = '0';
+//    data_bits_with_error[109] = '1';
+//    data_bits_with_error[139] = '0';
+//    data_bits_with_error[155] = '1';
+//    data_bits_with_error[159] = '0';
+    // a
+    // Hamming Code
+//    data_bits_with_error[0] = '1';
+//    data_bits_with_error[5] = '1';
+//    data_bits_with_error[16] = '1';
+//    data_bits_with_error[22] = '1';
+//    data_bits_with_error[26] = '0';
+//    data_bits_with_error[28] = '0';
+//    data_bits_with_error[53] = '1';
+//    data_bits_with_error[57] = '0';
+//    data_bits_with_error[58] = '1';
+//    data_bits_with_error[71] = '1';
+//    data_bits_with_error[81] = '1';
+//    data_bits_with_error[106] = '0';
+//    data_bits_with_error[123] = '1';
+    // Error Detection
+//    data_bits_with_error[61] = '1';
+//    data_bits_with_error[89] = '0';
+//    data_bits_with_error[123] = '0';
+    // physical layer
+//    data_bits_with_error[1] = '0';
+//    data_bits_with_error[37] = '1';
+//    data_bits_with_error[50] = '1';
+//    data_bits_with_error[67] = '0';
+//    data_bits_with_error[97] = '1';
+//    data_bits_with_error[125] = '0';
+    // Error Correction
+//    data_bits_with_error[11] = '1';
+//    data_bits_with_error[101] = '1';
+    // no error
+    // many errors
+//    data_bits_with_error[5] = '0';
+//    data_bits_with_error[18] = '1';
+//    data_bits_with_error[21] = '1';
+//    data_bits_with_error[25] = '1';
+//    data_bits_with_error[47] = '1';
+//    data_bits_with_error[73] = '0';
+//    data_bits_with_error[80] = '1';
+//    data_bits_with_error[83] = '0';
+//    data_bits_with_error[90] = '0';
+//    data_bits_with_error[97] = '0';
+//    data_bits_with_error[108] = '1';
 
     cout << "received frame:" << endl;
     for(int i = 0; i < data_bits_with_error.size(); i++){
@@ -323,6 +424,30 @@ int main()
         cout << endl;
     }
     cout << endl;
+
+    string data_rows_received_without_hamming_bits[total_rows];
+    for(int i = 0; i < total_rows; i++){
+        data_rows_received_without_hamming_bits[i] = getDataBitsWithoutHammingBits(data_rows_received[i]);
+    }
+
+    cout << "data block after removing check bits:" << endl;
+    for(int i = 0; i < total_rows; i++){
+        cout << data_rows_received_without_hamming_bits[i] << endl;
+    }
+    cout << endl;
+
+    string output_frame = "";
+    for(int i = 0; i < total_rows; i++){
+        for(int j = 0; j < m; j++){
+            string binary_string = data_rows_received_without_hamming_bits[i].substr(j * 8, 8);
+            bitset<8> binary_number(binary_string);
+            int decimal_number = static_cast<int>(binary_number.to_ulong());
+            char ascii_character = static_cast<char>(decimal_number);
+            output_frame += ascii_character;
+        }
+    }
+
+    cout << "output frame: " << output_frame << endl;
 
     return 0;
 }
